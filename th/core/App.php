@@ -16,7 +16,7 @@ class App
 {
 
     /**
-     * 框架启动
+     * 框架启动 
      */
     public static function run()
     {
