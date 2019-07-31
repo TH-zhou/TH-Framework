@@ -15,6 +15,9 @@ namespace core;
 class App
 {
 
+    /**
+     * 框架启动
+     */
     public static function run()
     {
         //注册路由类
