@@ -14,3 +14,5 @@
 \core\Router::get('hello', '\app\index\controller\index@worlds');
 
 \core\Router::get('testParam/{param}', '\app\index\controller\index@testParams');
+
+\core\Router::get('testModel', '\app\index\controller\Users@index');
