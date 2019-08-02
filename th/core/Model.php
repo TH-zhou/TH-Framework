@@ -758,4 +758,29 @@ class Model
     {
         return $this->sql;
     }
+
+
+    /**
+     * 启动事务
+     */
+    public function startTrans()
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    /**
+     * 提交事务
+     */
+    public function commit()
+    {
+        $this->pdo->commit();
+    }
+
+    /**
+     * 回滚事务
+     */
+    public function rollback()
+    {
+        $this->pdo->rollback();
+    }
 }
