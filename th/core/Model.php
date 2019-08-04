@@ -15,9 +15,6 @@ class Model
 {
     use Singleton;
 
-    //数据库连接池
-    protected static $links = [];
-
     //PDO实例
     protected $pdo;
 
@@ -26,9 +23,6 @@ class Model
 
     //表名 不带前缀
     protected $name;
-
-    //类名
-    protected $class;
 
     //保存的参数
     private $options = [];
@@ -49,40 +43,39 @@ class Model
         $this->connect();
     }
 
-
     /**
      * 数据库连接
      * @return $this
      */
-    public function connect()
+    private function connect()
     {
-        //当前类名
-        $this->class = get_called_class();
-
-        if (!isset(self::$links[$this->class]))
+        if (empty($this->pdo = \design\Di::getInstance()->get('PDO')))
         {
+            //当前类名
+            $currentClass = get_called_class();
+
             $dsnString = $this->getDsn();
 
             try{
 
                 $this->pdo = new \PDO($dsnString, Facade::Config('get', 'username'), Facade::Config('get', 'password'));
+                //注册PDO实例
+                \design\Di::getInstance()->set('PDO', $this->pdo);
 
                 //获取表名
-                $this->name = basename(strtr($this->class, '\\', DS));
+                $this->name = basename(strtr($currentClass, '\\', DS));
 
                 //带前缀表名
                 $this->table = Facade::Config('get', 'prefix') . strtolower($this->name);
 
-                self::$links[$this->class] = $this->pdo;
-
-            }catch (\Exception $e)
-            {
+            }catch (\Exception $e){
                 exit($e->getMessage());
             }
         }
 
         return $this;
     }
+
 
     /**
      * 获取 DSN
@@ -120,8 +113,9 @@ class Model
      */
     public function table($table = '')
     {
-        $this->options['table'] = $this->table;
         if (!empty($table) && is_string($table))
+            $this->table = $this->options['table'] = $table;
+        else
             $this->options['table'] = $this->table;
 
         return $this;
@@ -134,9 +128,10 @@ class Model
      */
     public function name($name = '')
     {
-        $nameString = $this->name;
         if (!empty($name) && is_string($name))
-            $nameString = $name;
+            $this->name = $nameString = $name;
+        else
+            $nameString = $this->name;
 
         $this->options['name'] = Facade::Config('get', 'prefix') . strtolower($nameString);
 
@@ -224,10 +219,21 @@ class Model
      */
     public function limit($limit = '')
     {
-        if (is_array($limit))
-            $this->options['limit'] = ' LIMIT '.$limit[0].','.$limit[1];
+        if (empty($limit))
+        {
+            $limit = Facade::Config('get', 'page_limit');
+            $offset = (Facade::Config('get', 'page_offset') - 1) * $limit;
+        }
         else
-            $this->options['limit'] = ' LIMIT '.$limit;
+        {
+            $limitArray = is_array($limit) ? $limit : explode(',', $limit);
+            $limitArray = array_filter($limitArray);
+
+            $limit = $limitArray[1];
+            $offset = ((empty($limitArray[0]) ? 1 : $limitArray[0]) - 1) * $limit;
+        }
+
+        $this->options['limit'] = ' LIMIT '.$offset.','.$limit;
 
         return $this;
     }
@@ -239,6 +245,8 @@ class Model
     public function alias($alias)
     {
         $this->options['alias'] = ' AS '.$alias;
+
+        return $this;
     }
 
 
@@ -250,13 +258,13 @@ class Model
     public function join(...$args)
     {
         //left/right/inner join
-        $joinString = ' '.$args[3].' JOIN ';
+        $joinString = ' '.(!empty($args[2]) ? strtoupper($args[2]) : 'INNER').' JOIN ';
 
         $joinTableString = $args[0];
-        if (strpos($args[0], Facade::Config('get', 'prefix')) !== false)
+        if (strpos($args[0], Facade::Config('get', 'prefix')) === false)
             $joinTableString = Facade::Config('get', 'prefix').$joinTableString;
 
-        $joinWhereString = ' ON '.$args[2];
+        $joinWhereString = ' ON '.$args[1];
 
         $this->options['join'] = $joinString . $joinTableString . $joinWhereString;
 
@@ -285,29 +293,7 @@ class Model
     public function find($sql = '')
     {
         if (empty($sql))
-        {
-            $sql = 'SELECT %fields% FROM %tableString% %whereString% %limit%';
-
-            //限制查询一条
-            $this->limit(1);
-
-            //默认查询所有字段
-            if (empty($optionsArray['fields']))
-                $this->fields('*');
-
-            //获取参数
-            $optionsArray = $this->getOptions();
-
-            //替换内容
-            $sql = str_replace(
-                ['%fields%', '%tableString%', '%whereString%', '%limit%'],
-                [$optionsArray['fields'], $optionsArray['table'], $optionsArray['where'], $optionsArray['limit']],
-                $sql
-            );
-
-            //清空options参数
-            $this->clearOption();
-        }
+            $sql = $this->strReplaceSql([1]); //获取sql
 
         $PDOStatement = $this->querySql($sql);
 
@@ -327,26 +313,7 @@ class Model
     public function select($sql = '')
     {
         if (empty($sql))
-        {
-            $sql = 'SELECT %fields% FROM %tableString% %whereString% %orderby% %limit%';
-
-            //默认查询所有字段
-            if (empty($optionsArray['fields']))
-                $this->fields('*');
-
-            //获取参数
-            $optionsArray = $this->getOptions();
-
-            //替换内容
-            $sql = str_replace(
-                ['%fields%', '%tableString%', '%whereString%', '%orderby%', '%limit%'],
-                [$optionsArray['fields'], $optionsArray['table'], $optionsArray['where'], $optionsArray['order'], $optionsArray['limit']],
-                $sql
-            );
-
-            //清空options参数
-            $this->clearOption();
-        }
+            $sql = $this->strReplaceSql(); //获取sql
 
         $PDOStatement = $this->querySql($sql);
 
@@ -373,20 +340,8 @@ class Model
         $fieldsString = $field ? (is_array($field) ? implode(',', $field) : $field)
             : (!empty($this->options['fields']) ? explode(',', $this->options['fields'])[0] : '*');
 
-        $sql = 'SELECT '.$fieldsString.' FROM %tableString% %whereString% %orderby% %limit%';
-
-        //获取参数
-        $optionsArray = $this->getOptions();
-
-        //替换内容
-        $sql = str_replace(
-            ['%tableString%', '%whereString%', '%orderby%', '%limit%'],
-            [$optionsArray['table'], $optionsArray['where'], $optionsArray['order'], $optionsArray['limit']],
-            $sql
-        );
-
-        //清空options参数
-        $this->clearOption();
+        //获取sql
+        $sql = $this->strReplaceSql(['fields' => $fieldsString]);
 
         $PDOStatement = $this->querySql($sql);
 
@@ -416,20 +371,8 @@ class Model
         $fieldsCount = count($fieldsArray);
         $fieldsString = implode(',', $fieldsArray);
 
-        $sql = 'SELECT '.$fieldsString.' FROM %tableString% %whereString% %orderby% %limit%';
-
-        //获取参数
-        $optionsArray = $this->getOptions();
-
-        //替换内容
-        $sql = str_replace(
-            ['%tableString%', '%whereString%', '%orderby%', '%limit%'],
-            [$optionsArray['table'], $optionsArray['where'], $optionsArray['order'], $optionsArray['limit']],
-            $sql
-        );
-
-        //清空options参数
-        $this->clearOption();
+        //获取sql
+        $sql = $this->strReplaceSql(['fields' => $fieldsString]);
 
         $PDOStatement = $this->querySql($sql);
 
@@ -440,9 +383,54 @@ class Model
         if ($fieldsCount == 1) //只有一个字段
             $resultArray = array_column($fetchAllArray, $fieldsString);
         else
+        {
+            //判断字段是否有别名情况
+            $fieldsArray = array_map(function ($v){
+                if (($strpos = strpos($v, '.')) !== false)
+                    return substr($v, $strpos+1);
+                else
+                    return $v;
+            }, $fieldsArray);
             $resultArray = array_combine(array_column($fetchAllArray, $fieldsArray[0]), array_column($fetchAllArray, $fieldsArray[1]));
+        }
 
         return $resultArray;
+    }
+
+    /**
+     * 获取替换后的sql
+     * @param array $param
+     * @return mixed|string
+     */
+    private function strReplaceSql(array $param = [])
+    {
+        $sql = 'SELECT %fields% FROM %tableString% %alias% %joinString% %whereString% %orderString% %limit%';
+
+        //限制查询条数量
+        if (!empty($param['limit'])) $this->limit($param['limit']);
+
+        //查询需要的字段
+        if (!empty($param['fields']))
+            $this->fields($param['fields']);
+        else
+            if (empty($this->options['fields']))
+                $this->fields('*');
+
+        //获取参数
+        $optionsArray = $this->getOptions();
+
+        //替换内容
+        $sql = str_replace(
+            ['%fields%', '%tableString%', '%alias%', '%joinString%', '%whereString%', '%orderString%', '%limit%'],
+            [$optionsArray['fields'], $optionsArray['table'], $optionsArray['alias'], $optionsArray['join'],
+                $optionsArray['where'], $optionsArray['order'], $optionsArray['limit']],
+            $sql
+        );
+
+        //清空options参数
+        $this->clearOption();
+
+        return $sql;
     }
 
 
@@ -494,8 +482,12 @@ class Model
             $optionsArray[$v] = !empty($this->options[$v]) ? $this->options[$v] : '';
 
         //没有调用table()或者name方法时补上表名
-        if (empty($optionsArray['table']) || empty($optionsArray['name']))
-            $optionsArray['table'] = $optionsArray['name'] = $this->table;
+        if (!empty($optionsArray['table']))
+            $optionsArray['name'] = $this->table;
+        elseif (!empty($optionsArray['name']))
+            $optionsArray['table'] = Facade::Config('get', 'prefix') . strtolower($this->name);
+        else
+            exit('请设置表名');
 
         return $optionsArray;
     }

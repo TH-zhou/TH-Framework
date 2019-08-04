@@ -11,6 +11,27 @@ namespace core;
 /**
  * Class Db
  * @package core
+ * @method Model table(string $table) static 指定数据表（含前缀）
+ * @method Model name(string $name) static 指定数据表（不含前缀）
+ * @method Model fields($field) static 需要查询的字段 string|array
+ * @method Model where($where) static 查询条件 string|array
+ * @method Model order($order) static 查询ORDER string|array
+ * @method Model limit($limit) static 查询LIMIT string|array
+ * @method Model alias(string $alias) static 指定表别名
+ * @method Model join($table, $on, $join) static JOIN查询
+ * @method Model allowed($allowed) static 指定允许操作的字段 bool|array
+ * @method Model find($sql = null) static 查询单个记录
+ * @method Model select($sql = null) static 查询多个记录
+ * @method Model value(string $field) static 获取某个字段的值
+ * @method Model column($field) static 获取某个列的值 string|array*
+ * @method Model insertGetId(array $data) static 插入一条记录并返回自增ID
+ * @method Model insertAll(array $data) static 插入多条记录
+ * @method Model setField(array $data) static 更新指定字段
+ * @method Model delete() static 删除记录
+ * @method Model getLastSql() static 获取最后一次执行的sql
+ * @method Model startTrans() static 启动事务
+ * @method Model commit() static 用于非自动提交状态下面的查询提交
+ * @method Model rollback() static 事务回滚
  */
 class Db
 {

@@ -32,4 +32,8 @@ return [
     //缓存存放路径
     'tpl_cache_path' => RUNTIME_PATH . 'cache' . DS,
 
+    //分页配置
+    'page_offset' => 1, //默认第一页
+    'page_limit' => 10, //默认每页显示10条
+
 ];
