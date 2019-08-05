@@ -9,6 +9,7 @@ namespace app\index\controller;
 
 use core\Controller;
 use core\Db;
+use core\Session;
 
 class Users extends Controller
 {
@@ -21,5 +22,15 @@ class Users extends Controller
             ->select();
         echo '<pre>';
         print_r($aa);
+    }
+
+
+    public function testSession()
+    {
+        Session::set('test', 'testSession');
+
+        Session::set('aa.bb', 'cc');
+
+        var_dump(Session::get('test'), Session::get('aa.bb'));
     }
 }

@@ -16,3 +16,5 @@
 \core\Router::get('testParam/{param}', '\app\index\controller\index@testParams');
 
 \core\Router::get('testDb', '\app\index\controller\Users@index');
+
+\core\Router::get('session', '\app\index\controller\Users@testSession');

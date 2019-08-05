@@ -36,4 +36,9 @@ return [
     'page_offset' => 1, //默认第一页
     'page_limit' => 10, //默认每页显示10条
 
+
+    //session配置
+    'session_preifx' => 'th', //session前缀
+    'session_expire' => 86400, //session过期时间，秒单位
+
 ];
