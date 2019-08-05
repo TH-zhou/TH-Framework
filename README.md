@@ -6,3 +6,4 @@ TH Framework
 
 V(视图层)中也仅仅实现了解析变量、IF、foreach及注释等
 
+需自己创建 runtime 缓存目录，并保证有可写权限
