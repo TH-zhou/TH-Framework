@@ -29,6 +29,24 @@ class Controller
     {
         //注册视图实例
         \design\Di::getInstance()->set('VIEW', new View());
+
+        if (!empty($_REQUEST['csrf_token']))
+            $this->checkCSRF($_REQUEST['csrf_token']);
+    }
+
+
+    /**
+     * 验证CSRF
+     * @param $csrf_token
+     * @return bool
+     */
+    private function checkCSRF($csrf_token)
+    {
+        //从session中获取CSRF_TOKEN来比对
+        if ($csrf_token != Session::get('csrf_token'))
+            exit('CSRF verification failed');
+
+        return true;
     }
 
     /**

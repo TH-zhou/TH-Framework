@@ -104,6 +104,12 @@ class View
 
         //解析注释
         $this->patternComment();
+
+        //解析URL
+        $this->patternUrl();
+
+        //解析CSRF_TOKEN
+        $this->patternCSRFToken();
     }
 
     /**
@@ -116,6 +122,7 @@ class View
         if (preg_match($pattern, $this->fileContent, $match))
             $this->fileContent = preg_replace($pattern, "<?php echo \$this->assignArray['$1']; ?>", $this->fileContent);
     }
+
 
     /**
      * 解析if
@@ -172,5 +179,35 @@ class View
 
         if (preg_match($pattern, $this->fileContent, $startMatch))
             $this->fileContent = preg_replace($pattern, "<?php /** $1 */ ?>", $this->fileContent);
+    }
+
+    /**
+     * 解析url
+     */
+    private function patternUrl()
+    {
+        //匹配 {:url('module/controller/action')}
+        $pattern = '/\{:url\([\"|\'](\w.*)[\"|\']\)\}/';
+
+        if (preg_match($pattern, $this->fileContent, $match))
+            $this->fileContent = preg_replace($pattern, "<?php echo url('$1'); ?>", $this->fileContent);
+    }
+
+    /**
+     * 解析CSRF_TOKEN
+     */
+    private function patternCSRFToken()
+    {
+        //匹配 {CSRF_TOKEN}
+        $pattern = '/\{CSRF_TOKEN\}/';
+
+        if (preg_match($pattern, $this->fileContent))
+        {
+            //随机生成字符串
+            $token = md5(md5(time()));
+            Session::set('csrf_token', $token);
+
+            $this->fileContent = preg_replace($pattern, "<input type='hidden' name='csrf_token' value='".$token."' />", $this->fileContent);
+        }
     }
 }

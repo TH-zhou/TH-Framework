@@ -22,6 +22,10 @@ class App
     {
         //注册路由类
         \design\Di::getInstance()->set('ROUTER', new Router());
+
+        //加载助手函数
+        include CORE_PATH . '/Helper.php';
+
         //加载配置路由
         include ROUTER_PATH . '/web.php';
         //解析当前URL

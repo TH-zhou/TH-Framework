@@ -184,4 +184,33 @@ class Router
         return ['route' => $ruleUrlString];
     }
 
+    /**
+     * 获取url 模块名/控制器名/方法名
+     * @param $url
+     * @return null|string
+     */
+    public static function getUrl($url)
+    {
+        $urlArray = explode(DS, $url);
+
+        // 模块名/控制器名/方法名
+        $urlString = strtolower('\\app\\'.$urlArray[0].'\\controller\\'.$urlArray[1].'@'.$urlArray[2]);
+
+        //获取http/https协议
+        $protocalString = isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == '443' ? 'https://' : 'http://';
+
+        //获取网站域名
+        $serverNameString = $_SERVER['SERVER_NAME'];
+
+        foreach (self::$rulesArray as $k => $v)
+        {
+            foreach ($v as $key => $val)
+            {
+                if ($urlString == $val)
+                    return $protocalString.$serverNameString.DS.ENTRANCE_FILE.$key;
+            }
+        }
+
+        return NULL;
+    }
 }

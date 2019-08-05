@@ -9,6 +9,7 @@ namespace app\index\controller;
 
 use core\Controller;
 use core\Db;
+use core\Router;
 use core\Session;
 
 class Users extends Controller
@@ -32,5 +33,19 @@ class Users extends Controller
         Session::set('aa.bb', 'cc');
 
         var_dump(Session::get('test'), Session::get('aa.bb'));
+    }
+
+    public function testPost()
+    {
+//        Router::getUrl('index/users/testpost');
+        if (!empty($_POST))
+        {
+            echo '<pre>';
+            print_r($_POST);
+
+            exit();
+        }
+
+        $this->display();
     }
 }

@@ -18,3 +18,5 @@
 \core\Router::get('testDb', '\app\index\controller\Users@index');
 
 \core\Router::get('session', '\app\index\controller\Users@testSession');
+
+\core\Router::bindRule('post', '\app\index\controller\Users@testPost', ['get', 'post']);

@@ -10,6 +10,7 @@ namespace th;
 
 define('DS', DIRECTORY_SEPARATOR);
 define('EXT', '.php');
+defined('ENTRANCE_FILE') or define('ENTRANCE_FILE', 'index.php');
 defined('TH_PATH') or define('TH_PATH', __DIR__ . DS);
 defined('DESIGN_PATH') or define('DESIGN_PATH', TH_PATH . 'design' . DS);
 defined('CORE_PATH') or define('CORE_PATH', TH_PATH . 'core' . DS);
